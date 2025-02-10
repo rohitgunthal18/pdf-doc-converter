@@ -1,10 +1,12 @@
 from flask import Flask, request, send_file, render_template
+from flask_cors import CORS  # Import CORS
 from pdf2docx import Converter
 from docx import Document
 from reportlab.pdfgen import canvas
 import os
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
@@ -17,7 +19,7 @@ def index():
 @app.route("/pdf-to-docx", methods=["POST"])
 def pdf_to_docx():
     file = request.files["file"]
-    if file.filename.endswith(".pdf"):
+    if file and file.filename.endswith(".pdf"):
         pdf_path = os.path.join(UPLOAD_FOLDER, file.filename)
         docx_path = pdf_path.replace(".pdf", ".docx")
         file.save(pdf_path)
@@ -27,11 +29,12 @@ def pdf_to_docx():
         cv.close()
 
         return send_file(docx_path, as_attachment=True)
+    return {"error": "Invalid file format"}, 400
 
 @app.route("/docx-to-pdf", methods=["POST"])
 def docx_to_pdf():
     file = request.files["file"]
-    if file.filename.endswith(".docx"):
+    if file and file.filename.endswith(".docx"):
         docx_path = os.path.join(UPLOAD_FOLDER, file.filename)
         pdf_path = docx_path.replace(".docx", ".pdf")
         file.save(docx_path)
@@ -43,6 +46,7 @@ def docx_to_pdf():
         pdf.save()
 
         return send_file(pdf_path, as_attachment=True)
+    return {"error": "Invalid file format"}, 400
 
 if __name__ == "__main__":
     app.run(debug=True)
